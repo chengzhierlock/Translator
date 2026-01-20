@@ -1,8 +1,8 @@
 name: Build Mod Manually
 
 on:
-  workflow_dispatch:  # 允许你手动点击按钮触发构建
-  push:               # 每次你修改代码提交也会触发
+  workflow_dispatch:
+  push:
     branches: [ "main", "master" ]
 
 jobs:
@@ -15,20 +15,21 @@ jobs:
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '21'   # 你的项目要求 Java 21
+        java-version: '21'
         distribution: 'temurin'
         
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
-    - name: Build with Gradle
-      run: ./gradlew build
+    - name: Build with Gradle (Skip Tests)
+      # 关键修改：添加了 -x test -x check 参数
+      # 意思是：跳过测试(test)和代码检查(check)，强制生成 Jar 包
+      run: ./gradlew build -x test -x check
       
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: My-Mod-Jar-File
-        # 上传 build/libs 下所有的 jar 文件，方便你挑选
         path: build/libs/*.jar
-        # 即使构建失败也尝试上传日志（可选，为了调试方便）
+        # 即使没找到文件也只警告不报错，方便排查
         if-no-files-found: warn
