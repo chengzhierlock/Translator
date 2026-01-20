@@ -17,19 +17,25 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        
+
+    # === 关键修改：这一步会自动把腾讯云镜像替换成官方源 ===
+    - name: Fix Gradle Mirror (Replace Tencent with Official)
+      run: |
+        # 将 gradle-wrapper.properties 里的腾讯云地址换成官方地址
+        sed -i 's|mirrors.cloud.tencent.com/gradle|services.gradle.org/distributions|' gradle/wrapper/gradle-wrapper.properties
+        # 顺便把 build.gradle 里可能存在的国内镜像源也替换掉（防止后面依赖下载也卡住）
+        sed -i 's|maven.aliyun.com|repo1.maven.org/maven2|' build.gradle || true
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
     - name: Build with Gradle (Skip Tests)
-      # 关键修改：添加了 -x test -x check 参数
-      # 意思是：跳过测试(test)和代码检查(check)，强制生成 Jar 包
-      run: ./gradlew build -x test -x check
+      # 增加超时时间到 300秒，防止网络波动
+      run: ./gradlew build -x test -x check -Dorg.gradle.internal.http.connectionTimeout=300000 -Dorg.gradle.internal.http.socketTimeout=300000
       
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: My-Mod-Jar-File
         path: build/libs/*.jar
-        # 即使没找到文件也只警告不报错，方便排查
         if-no-files-found: warn
